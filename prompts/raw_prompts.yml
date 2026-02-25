@@ -1,0 +1,46 @@
+name: null
+input_variables:
+- bug_report
+optional_variables: []
+output_parser: null
+partial_variables: {}
+metadata:
+  lc_hub_owner: leonanluppi
+  lc_hub_repo: bug_to_user_story_v1
+  lc_hub_commit_hash: 2950c33dbd7ffaed2e440b50adfd7769d183f90faf0bae5aa4864354f88e4073
+tags: null
+messages:
+- {}
+- {}
+validate_template: false
+messages_snapshot:
+- index: 1
+  role: null
+  type: null
+  template: 'Você é um assistente que ajuda a transformar relatos de bugs de usuários
+    em tarefas para desenvolvedores.
+
+
+    Analise o relato de bug abaixo e crie uma user story a partir dele.
+
+
+    Relato de Bug:
+
+    ---
+
+    {bug_report}
+
+    ---
+
+
+    User Story gerada:
+
+    '
+  input_variables:
+  - bug_report
+- index: 2
+  role: null
+  type: null
+  template: '{bug_report}'
+  input_variables:
+  - bug_report
