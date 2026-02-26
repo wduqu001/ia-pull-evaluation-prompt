@@ -14,18 +14,33 @@ bug_to_user_story_v2:
 
     Regra obrigatória: não exponha o raciocínio interno; retorne somente a resposta final em Markdown.
 
+    Regras de confiabilidade:
+    - Nunca inferir causas-raiz, motivos ocultos ou comportamentos não descritos no bug report.
+    - Use apenas as informações explícitas fornecidas pelo usuário.
+    - Se faltar contexto, declare claramente as lacunas em vez de assumir detalhes.
+    - Quando aplicável, mencione referências explícitas citadas no relato (ex.: endpoint, tela, serviço, log, ticket, métrica ou incidente).
+
     Use a hierarquia abaixo para enquadrar cada resposta:
     - **Contexto / Impacto**: resumo breve e impacto esperado.
+    - **Severity Score**: atribua severidade de 1 a 5 com justificativa objetiva.
     - **User Story**: inclua exatamente 1 história no formato "Como [persona], eu quero [ação] para [benefício]".
     - **Critérios de Aceitação**: inclua no mínimo 3 critérios específicos, observáveis e testáveis.
     - **Edge Cases**: mencione pelo menos um caso de borda e como lidar.
 
+    Escala obrigatória para Severity Score:
+    - 1 = impacto mínimo, sem bloquear fluxo crítico.
+    - 2 = impacto baixo, workaround simples disponível.
+    - 3 = impacto moderado, afeta parte do fluxo principal.
+    - 4 = impacto alto, degrada fluxo crítico e receita/experiência.
+    - 5 = impacto crítico, risco de segurança/compliance ou indisponibilidade grave.
+
     Siga exatamente esta ordem e estes cabeçalhos na resposta:
     1. ## Contexto / Impacto
-    2. ## User Story
-    3. ## Critérios de Aceitação
-    4. ## Edge Cases
-    5. ## Dados Necessários para Validação
+    2. ## Severity Score
+    3. ## User Story
+    4. ## Critérios de Aceitação
+    5. ## Edge Cases
+    6. ## Dados Necessários para Validação
 
     Caso o relato esteja incompleto (ex.: sem passos, sem recursos afetados), documente a assunção e indique os dados que precisa antes de priorizar a história.
 
@@ -36,42 +51,93 @@ bug_to_user_story_v2:
     ---
 
     A resposta deve seguir exatamente o formato acima, usando Markdown com cabeçalhos e marcadores.
+    Em "Severity Score", informe um número de 1 a 5 e uma justificativa em 1 frase.
     Em "Dados Necessários para Validação", liste objetivamente logs, reproduções e métricas para validar a solução.
 
-  few_shot_examples:
+  examples:
     - bug_report: |
-        Ao clicar em "Salvar" no cadastro de cliente, o sistema somente aceita um nome e fecha a janela sem avisar.
+        [PT-BR] Em produção, usuários conseguem reutilizar um link de reset de senha mais de uma vez.
+        O token não expira após o primeiro uso e já houve relato de acesso indevido à conta.
       user_story: |
         ## Contexto / Impacto
-        Vários executivos não conseguem registrar novos clientes, interrompendo o onboarding.
+        Há risco de takeover de contas porque tokens de recuperação de senha podem ser reutilizados, impactando segurança e confiança do produto.
+
+        ## Severity Score
+        5 - Vulnerabilidade de segurança com potencial de acesso indevido a contas de clientes.
 
         ## User Story
-        Como Engenheiro de Produto, quero validar o formulário de cadastro para aceitar entradas longas com mensagens claras, garantindo que o fluxo de onboarding não feche inesperadamente.
+        Como Product Security Manager, eu quero invalidar imediatamente o token de reset após o primeiro uso para reduzir o risco de acesso não autorizado.
 
         ## Critérios de Aceitação
-        - O campo "Nome" aceita até 100 caracteres sem truncar.
-        - O botão "Salvar" permanece ativo após múltiplas tentativas.
-        - Uma mensagem de feedback aparece quando o nome excede o limite.
+        - O token de reset torna-se inválido imediatamente após uma troca de senha bem-sucedida.
+        - Tokens expirados ou reutilizados retornam erro 401/403 com mensagem de falha segura, sem revelar detalhes sensíveis.
+        - Cada tentativa de reset (sucesso/falha) é registrada com user_id, timestamp e origem para auditoria.
 
         ## Edge Cases
-        - Se o usuário colar um texto com quebra de linha, a janela continua aberta e destaca o campo inválido.
+        - Se dois requests de reset chegarem quase simultaneamente, apenas o primeiro válido conclui; o segundo deve falhar de forma determinística.
 
     - bug_report: |
-        O painel de métricas mostra porcentagens acima de 100% para os objetivos semanais.
+        [PT-BR] A API de checkout começa a responder 503 em horários de pico (campanha relâmpago).
+        O pool de conexões ao banco satura e o tempo de resposta passa de 15 segundos.
       user_story: |
         ## Contexto / Impacto
-        Time de performance não consegue confiar em dados porque KPIs mostram valores irrealmente inflados.
+        Durante picos de tráfego, a indisponibilidade do checkout gera abandono de carrinho e perda direta de receita.
+
+        ## Severity Score
+        4 - O problema impacta diretamente receita e jornada crítica de compra em produção.
 
         ## User Story
-        Como Product Analyst, quero recalcular as porcentagens com base nos valores base (não acumulados) para entender o progresso real.
+        Como SRE de Produto, eu quero aplicar limitação de taxa e fila de processamento no checkout para manter o serviço estável sob sobrecarga.
 
         ## Critérios de Aceitação
-        - Percentuais são limitados a 100% mesmo quando os valores excedem a meta.
-        - O dashboard exibe tooltip explicando a fórmula usada.
-        - Logs registram cada atualização para auditoria.
+        - Sob carga de 3x o baseline, a API mantém taxa de erro abaixo de 1% e p95 menor que 2 segundos para requests aceitos.
+        - Requests acima do limite retornam 429 com mensagem orientativa e cabeçalho `Retry-After`.
+        - O sistema publica métricas de fila, saturação de conexões e latência no dashboard operacional.
 
         ## Edge Cases
-        - Se uma meta for zerada, exibir "Meta indisponível" sem quebrar o layout.
+        - Se um tenant exceder o limite, o throttling é isolado por tenant para não degradar os demais clientes.
+
+    - bug_report: |
+        [EN] In production, the admin endpoint `/api/users/export` is accessible to regular authenticated users.
+        Any logged-in user can download full customer CSV data.
+      user_story: |
+        ## Contexto / Impacto
+        Sensitive customer data is exposed due to broken authorization on an admin-only export route.
+
+        ## Severity Score
+        5 - Direct data exposure risk with clear security and compliance impact.
+
+        ## User Story
+        As a Product Security Lead, I want to enforce role-based access control on export endpoints so only authorized admin roles can access customer exports.
+
+        ## Critérios de Aceitação
+        - Users without `admin` or `compliance_admin` role receive 403 on `/api/users/export`.
+        - Successful exports include an audit log entry with actor, scope, and reason code.
+        - Automated authorization tests cover positive and negative role scenarios in CI.
+
+        ## Edge Cases
+        - If role claims are stale in cache, the API must revalidate permissions before generating the export file.
+
+    - bug_report: |
+        [EN] During a flash sale, the product search API intermittently times out and returns 504.
+        CPU spikes to 95% and upstream requests pile up, causing cascading failures.
+      user_story: |
+        ## Contexto / Impacto
+        Search instability during high-traffic events degrades discoverability and conversion at the most critical revenue window.
+
+        ## Severity Score
+        4 - High production impact during peak sales windows with measurable conversion loss.
+
+        ## User Story
+        As a Platform Product Manager, I want adaptive load-shedding and cached fallback results for search so users still get fast responses during traffic spikes.
+
+        ## Critérios de Aceitação
+        - When upstream latency exceeds threshold, search serves cached fallback results within 1 second.
+        - Circuit breaker opens after configurable failure rate and recovers via half-open strategy.
+        - Alerting notifies on-call when p95 latency or error budget breaches defined SLO limits.
+
+        ## Edge Cases
+        - If cache is cold and upstream is unavailable, return a graceful degraded response with retry guidance instead of raw 5xx stack traces.
 
   metadata:
     version: "v2"
