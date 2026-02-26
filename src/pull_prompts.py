@@ -25,7 +25,8 @@ def pull_prompts_from_langsmith():
     """Return the ChatPromptTemplate dictionary retrieved from LangSmith."""
 
     if not check_env_vars(["LANGSMITH_API_KEY"]):
-        return None
+        logger.error("LANGSMITH_API_KEY is not set. Please define it in your .env file.")
+        return 1
 
     print_section_header("Pulling Prompts from LangSmith Prompt Hub")
     logger.info("Starting LangSmith pull for %s", PROMPT_ID)
