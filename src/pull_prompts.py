@@ -149,6 +149,7 @@ def main() -> int:
     """Entry point for the script."""
     prompt_dict = pull_prompts_from_langsmith()
     if not prompt_dict:
+        logger.error("Failed to pull prompt data. Exiting.")
         return 1
 
     save_yaml(prompt_dict, RAW_OUTPUT_PATH)
