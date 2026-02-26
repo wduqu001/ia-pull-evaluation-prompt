@@ -57,7 +57,7 @@
     - [x] `test_prompt_has_few_shot_examples`: Contains example pairs.
     - [x] `test_prompt_no_todos`: Removes `[TODO]` markers.
     - [x] `test_minimum_techniques`: Metadata lists at least 2 techniques.
-- [ ] Run `pytest tests/test_prompts.py`.
+- [x] Run `pytest tests/test_prompts.py`.
 
 ## 7. Phase 6: Documentation & Delivery 📄
 - [ ] Update `README.md`:
