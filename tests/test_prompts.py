@@ -54,7 +54,9 @@ class TestPrompts:
 
     def test_prompt_has_few_shot_examples(self, prompt_data):
         """Verifica se o prompt contém exemplos Few-shot."""
-        examples = prompt_data.get("few_shot_examples", [])
+        examples = prompt_data.get("examples")
+        if examples is None:
+            examples = prompt_data.get("few_shot_examples", [])
         assert isinstance(examples, list) and len(examples) >= 2, (
             "Devem existir ao menos dois exemplos few-shot"
         )
