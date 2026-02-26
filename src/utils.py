@@ -3,11 +3,18 @@
 import os
 import yaml
 import json
-from typing import Dict, Any, Optional
+import time
+import random
+import threading
+from typing import Dict, Any, Optional, Callable, TypeVar
 from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+T = TypeVar("T")
+_invoke_lock = threading.Lock()
+_last_invoke_timestamp = 0.0
 
 
 def load_yaml(file_path: str) -> Optional[Dict[str, Any]]:
@@ -187,3 +194,66 @@ def get_eval_llm(temperature: float = 0.0):
     """Return an evaluation-specific LLM instance using EVAL_MODEL."""
     eval_model = os.getenv('EVAL_MODEL', 'gpt-4o')
     return get_llm(model=eval_model, temperature=temperature)
+
+
+def _is_rate_limit_error(error: Exception) -> bool:
+    """Heuristic detection for provider/API rate-limit errors."""
+    text = str(error).lower()
+    markers = [
+        "429",
+        "too many requests",
+        "rate limit",
+        "rate_limit",
+        "resource_exhausted",
+        "quota exceeded",
+    ]
+    return any(marker in text for marker in markers)
+
+
+def invoke_with_throttle_retry(callable_fn: Callable[[], T], context: str = "LLM call") -> T:
+    """Invoke an LLM call with global pacing and retry/backoff.
+
+    Environment variables (optional):
+    - LLM_MIN_INTERVAL_SECONDS (default: 1.0)
+    - LLM_MAX_RETRIES (default: 6)
+    - LLM_BACKOFF_BASE_SECONDS (default: 2.0)
+    - LLM_MAX_BACKOFF_SECONDS (default: 45.0)
+    """
+    min_interval = float(os.getenv("LLM_MIN_INTERVAL_SECONDS", "1.0"))
+    max_retries = int(os.getenv("LLM_MAX_RETRIES", "6"))
+    backoff_base = float(os.getenv("LLM_BACKOFF_BASE_SECONDS", "2.0"))
+    max_backoff = float(os.getenv("LLM_MAX_BACKOFF_SECONDS", "45.0"))
+
+    global _last_invoke_timestamp
+
+    for attempt in range(max_retries + 1):
+        with _invoke_lock:
+            now = time.time()
+            elapsed = now - _last_invoke_timestamp
+            wait_for = max(0.0, min_interval - elapsed)
+            if wait_for > 0:
+                time.sleep(wait_for)
+
+            # Reserve slot timestamp before call to keep global pacing deterministic.
+            _last_invoke_timestamp = time.time()
+
+        try:
+            return callable_fn()
+        except Exception as exc:
+            is_rate_limit = _is_rate_limit_error(exc)
+            has_more_attempts = attempt < max_retries
+
+            if not has_more_attempts or not is_rate_limit:
+                raise
+
+            backoff = min(max_backoff, backoff_base * (2 ** attempt))
+            jitter = random.uniform(0, min(1.0, backoff * 0.25))
+            sleep_time = backoff + jitter
+            print(
+                f"⚠️  {context}: limite de taxa detectado, tentativa {attempt + 1}/{max_retries + 1}. "
+                f"Aguardando {sleep_time:.1f}s..."
+            )
+            time.sleep(sleep_time)
+
+    # Defensive fallback (the loop either returns or raises).
+    raise RuntimeError(f"{context}: falha inesperada no controle de retry")

@@ -28,10 +28,22 @@ from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
 
 try:
-    from .utils import check_env_vars, format_score, print_section_header, get_llm as get_configured_llm
+    from .utils import (
+        check_env_vars,
+        format_score,
+        print_section_header,
+        get_llm as get_configured_llm,
+        invoke_with_throttle_retry,
+    )
     from .metrics import evaluate_f1_score, evaluate_clarity, evaluate_precision
 except ImportError:
-    from utils import check_env_vars, format_score, print_section_header, get_llm as get_configured_llm
+    from utils import (
+        check_env_vars,
+        format_score,
+        print_section_header,
+        get_llm as get_configured_llm,
+        invoke_with_throttle_retry,
+    )
     from metrics import evaluate_f1_score, evaluate_clarity, evaluate_precision
 
 load_dotenv()
@@ -156,7 +168,10 @@ def evaluate_prompt_on_example(
 
         chain = prompt_template | llm
 
-        response = chain.invoke(inputs)
+        response = invoke_with_throttle_retry(
+            lambda: chain.invoke(inputs),
+            context="evaluate_prompt_on_example"
+        )
         answer = response.content
 
         reference = outputs.get("reference", "") if isinstance(outputs, dict) else ""
