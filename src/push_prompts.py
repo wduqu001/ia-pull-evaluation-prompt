@@ -17,7 +17,11 @@ from typing import Any
 from dotenv import load_dotenv
 from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
-from utils import load_yaml, check_env_vars, print_section_header
+
+try:
+    from .utils import load_yaml, check_env_vars, print_section_header
+except ImportError:
+    from utils import load_yaml, check_env_vars, print_section_header
 
 load_dotenv()
 

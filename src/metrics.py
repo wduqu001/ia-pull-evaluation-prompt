@@ -28,7 +28,11 @@ import re
 from typing import Dict, Any
 from dotenv import load_dotenv
 from langchain_core.messages import SystemMessage, HumanMessage
-from utils import get_eval_llm
+
+try:
+    from .utils import get_eval_llm
+except ImportError:
+    from utils import get_eval_llm
 
 load_dotenv()
 

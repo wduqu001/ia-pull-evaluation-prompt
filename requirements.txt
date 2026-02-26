@@ -1,19 +1,19 @@
 # LangChain Core
-langchain==0.3.13
-langchain-core==0.3.28
-langchain-community==0.3.13
+langchain==0.3.27
+langchain-core==0.3.83
+langchain-community==0.3.31
 
 # LangSmith for prompt management and evaluation
-langsmith==0.2.7
+langsmith==0.3.45
 
 # LLM Providers
-langchain-openai==0.2.14
-langchain-google-genai==2.0.8
+langchain-openai==0.3.35
+langchain-google-genai==2.1.12
 
 # Utilities
-python-dotenv==1.0.1
-pyyaml==6.0.2
+python-dotenv==1.2.1
+pyyaml==6.0.3
 pydantic==2.12.5
 
 # Testing
-pytest==8.3.4
+pytest==8.4.2

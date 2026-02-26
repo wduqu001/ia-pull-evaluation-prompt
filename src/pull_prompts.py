@@ -9,7 +9,10 @@ from typing import Any
 from dotenv import load_dotenv
 from langchain import hub
 
-from utils import check_env_vars, print_section_header, save_yaml
+try:
+    from .utils import check_env_vars, print_section_header, save_yaml
+except ImportError:
+    from utils import check_env_vars, print_section_header, save_yaml
 
 load_dotenv()
 
