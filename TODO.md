@@ -31,11 +31,11 @@
     - [x] Appropriate usage of System vs User prompt.
 
 ## 4. Phase 3: Push to the LangSmith Hub 📤
-- [ ] Implement `src/push_prompts.py`:
-    - [ ] Load `bug_to_user_story_v2.yml`.
-    - [ ] Add metadata: tags, description, techniques used.
-    - [ ] Run `hub.push("{your_username}/bug_to_user_story_v2", prompt_object, public=True)`.
-- [ ] Confirm the prompt is publicly accessible on the LangSmith dashboard.
+- [x] Implement `src/push_prompts.py`:
+    - [x] Load `bug_to_user_story_v2.yml`.
+    - [x] Add metadata: tags, description, techniques used.
+    - [x] Run `hub.push("{your_username}/bug_to_user_story_v2", prompt_object, public=True)`.
+- [x] Confirm the prompt is publicly accessible on the LangSmith dashboard.
 
 ## 5. Phase 4: Iterative Evaluation 🔄
 - [ ] Run `python src/evaluate.py`.
