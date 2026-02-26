@@ -57,9 +57,9 @@ def pull_prompts_from_langsmith():
         )
 
     raw_payload["messages_snapshot"] = readable_messages
-    logger.info("ChatPromptTemplate readable messages:\n%s", yaml.safe_dump(readable_messages, allow_unicode=True, sort_keys=False))
+    logger.debug("ChatPromptTemplate readable messages:\n%s", yaml.safe_dump(readable_messages, allow_unicode=True, sort_keys=False))
     logger.info(f"Successfully pulled prompt: {PROMPT_ID}")
-    logger.info("Raw prompt data keys: %s", list(raw_payload.keys()))
+    logger.debug("Raw prompt data keys: %s", list(raw_payload.keys()))
     return raw_payload
 
 
@@ -98,17 +98,17 @@ def extract_templates(prompt_dict: dict[str, Any]) -> tuple[str, str]:
 
         if "system" in role and not system_prompt:
             system_prompt = template
-            logger.info("System prompt extracted from message %d", idx)
+            logger.debug("System prompt extracted from message %d", idx)
         elif any(keyword in role for keyword in ("human", "user")) and not user_prompt:
             user_prompt = template
-            logger.info("User prompt extracted from message %d", idx)
+            logger.debug("User prompt extracted from message %d", idx)
 
         if not system_prompt and not user_prompt and idx == 1:
             system_prompt = template
-            logger.info("System prompt defaulted to first template in message %d", idx)
+            logger.debug("System prompt defaulted to first template in message %d", idx)
         elif not user_prompt and template != system_prompt:
             user_prompt = template
-            logger.info("User prompt defaulted to non-system template in message %d", idx)
+            logger.debug("User prompt defaulted to non-system template in message %d", idx)
 
     if not system_prompt:
         logger.warning("System prompt not identified via roles. Applying heuristic fallback.")
@@ -116,7 +116,7 @@ def extract_templates(prompt_dict: dict[str, Any]) -> tuple[str, str]:
             template = _extract_template(message)
             if "you" in template.lower() or "assistant" in template.lower():
                 system_prompt = template
-                logger.info("System prompt identified via fallback in message %d", idx)
+                logger.debug("System prompt identified via fallback in message %d", idx)
                 break
 
     logger.debug("Final templates | system prompt len=%d | user prompt len=%d", len(system_prompt), len(user_prompt))
